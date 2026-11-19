@@ -88,7 +88,7 @@
 <script type="module">
 import {Room, RoomEvent, Track} from 'https://esm.sh/livekit-client@2.22.4';
 // URL del backend propio de HOMERO LIVE (Cloudflare Worker).
-const HOMERO_API_URL='https://TU-WORKER.workers.dev';
+const HOMERO_API_URL='https://homero-live-server.livehomero857.workers.dev';
 async function homeroApi(path, body){
  if(!HOMERO_API_URL || HOMERO_API_URL.includes('TU-WORKER')) throw new Error('Falta configurar la URL del backend HOMERO LIVE. Revisá CONFIGURACION.');
  const response=await fetch(HOMERO_API_URL+path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,cache:'no-store'});
