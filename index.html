@@ -137,7 +137,7 @@ body.guest-link #authGate{display:none!important}
 <p id="authMessage" aria-live="polite"></p>
 </section>
 <header>👑 HOMERO LIVE</header>
-<section id="home" class="card"><p class="gold">TU SALA. TU COMUNIDAD. EN VIVO.</p><h1>Conectá a tu gente.</h1><p>Videollamada de prueba con cámara, micrófono y comentarios compartidos.</p><label for="name">Tu nombre</label><input id="name" required maxlength="40" placeholder="Ej.: Homero"><button id="createRoomBtn" class="primary hidden" onclick="createRoom()">＋ Crear sala (anfitrión)</button><button id="recoverRoomBtn" class="primary hidden" onclick="recoverHostRoom()">♻️ Recuperar mi sala como anfitrión</button><p id="guestRoomStatus" class="note">Compartí el enlace de HOMERO LIVE o escribí el código para entrar a la transmisión.</p><div id="joinBox" class="hidden"><input id="code" maxlength="50" placeholder="Código de sala"><button onclick="enterRoom()">Entrar a la sala</button></div><div id="hostAdmin" class="hidden">
+<section id="home" class="card"><p class="gold">TU SALA. TU COMUNIDAD. EN VIVO.</p><h1>Conectá a tu gente.</h1><p>Videollamada de prueba con cámara, micrófono y comentarios compartidos.</p><label for="name">Tu nombre</label><input id="name" required maxlength="40" placeholder="Ej.: Homero"><button id="createRoomBtn" class="primary hidden" onclick="createRoom()">＋ Crear sala (anfitrión)</button><button id="recoverRoomBtn" class="primary hidden" onclick="recoverHostRoom()">♻️ Recuperar mi sala como anfitrión</button><p id="guestRoomStatus" class="note">Escribí tu nombre y el código de sala que te compartió Homero para ingresar a la transmisión.</p><div id="joinBox"><label for="code">Código de la sala</label><input id="code" maxlength="50" autocomplete="off" placeholder="Escribí el código que te compartió Homero"><button type="button" class="primary" id="enterRoomBtn" onclick="enterRoom()">➡️ Entrar a la sala</button></div><div id="hostAdmin" class="hidden">
 <h3 class="gold">👑 Administración de HOMERO</h3>
 <section class="admin-panel"><h3>💳 Datos para transferencias</h3>
 <label for="bankHolder">Nombre del titular</label><input id="bankHolder" maxlength="100" placeholder="Nombre y apellido">
@@ -531,7 +531,8 @@ function addLocalCard(){
  const cameraToggle=$('camBtn');
  const mirrorButton=document.createElement('button');
  mirrorButton.type='button';mirrorButton.id='mirrorPreviewBtn';mirrorButton.className='local-mirror-control';
- mirrorButton.style.cssText='display:block!important;visibility:visible!important;opacity:1!important;width:100%;min-height:42px;margin:7px 0 0;padding:9px 12px;background:#f5d575;color:#15100a;border:2px solid #d4af37;border-radius:10px;font-weight:900;font-size:14px;line-height:1.2;position:relative;z-index:50;touch-action:manipulation';
+ mirrorButton.textContent='🪞';
+ mirrorButton.style.cssText='display:inline-flex!important;visibility:visible!important;opacity:1!important;align-items:center;justify-content:center;min-width:44px;min-height:42px;margin:0;padding:8px 10px;background:#f5d575;color:#15100a;border:2px solid #d4af37;border-radius:10px;font-weight:900;font-size:18px;line-height:1;position:relative;z-index:50;touch-action:manipulation';
  mirrorButton.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();toggleMirrorPreview();});
  const flipButton=document.createElement('button');
  flipButton.type='button';flipButton.id='flipBtn';flipButton.className='local-flip-control';
@@ -543,10 +544,9 @@ function addLocalCard(){
   cameraToggle.textContent='📷';
   cameraToggle.title='Encender o apagar cámara';
   cameraToggle.setAttribute('aria-label','Encender o apagar cámara');
-  controls.append(micButton,cameraToggle,flipButton);
- }else{controls.append(micButton,camButton,flipButton);}
+  controls.append(micButton,cameraToggle,flipButton,mirrorButton);
+ }else{controls.append(micButton,camButton,flipButton,mirrorButton);}
  card.querySelector('.name').append(controls);
- card.append(mirrorButton);
  applyMirrorPreview();
  if(isHostController()){
   $('hostReturnTop')?.classList.add('hidden');
