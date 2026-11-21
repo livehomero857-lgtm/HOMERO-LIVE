@@ -354,6 +354,7 @@ window.toggleMirrorPreview=()=>{
  mirrorPreview=!mirrorPreview;
  try{localStorage.setItem('homero_mirror_preview',mirrorPreview?'1':'0')}catch(e){}
  applyMirrorPreview();
+ const mirrorBtn=$('mirrorPreviewBtn');if(mirrorBtn){mirrorBtn.textContent=mirrorPreview?'🪞 MODO ESPEJO: ACTIVADO':'🪞 ACTIVAR MODO ESPEJO';}
  setStatus(mirrorPreview?'Vista previa en modo espejo.':'Vista previa en modo normal.');
 };
 const raisedHands=new Set();
@@ -531,8 +532,8 @@ function addLocalCard(){
  const cameraToggle=$('camBtn');
  const mirrorButton=document.createElement('button');
  mirrorButton.type='button';mirrorButton.id='mirrorPreviewBtn';mirrorButton.className='local-mirror-control';
- mirrorButton.textContent='🪞';
- mirrorButton.style.cssText='display:inline-flex!important;visibility:visible!important;opacity:1!important;align-items:center;justify-content:center;min-width:44px;min-height:42px;margin:0;padding:8px 10px;background:#f5d575;color:#15100a;border:2px solid #d4af37;border-radius:10px;font-weight:900;font-size:18px;line-height:1;position:relative;z-index:50;touch-action:manipulation';
+ mirrorButton.textContent='🪞 ACTIVAR MODO ESPEJO';
+ mirrorButton.style.cssText='display:flex!important;visibility:visible!important;opacity:1!important;align-items:center;justify-content:center;width:100%!important;min-width:100%!important;min-height:46px;margin:8px 0 4px!important;padding:10px 14px!important;box-sizing:border-box!important;background:#f5d575!important;color:#15100a!important;border:2px solid #d4af37!important;border-radius:12px!important;font-weight:900!important;font-size:15px!important;line-height:1.2!important;position:relative!important;z-index:100!important;touch-action:manipulation!important;white-space:normal!important;flex:0 0 100%!important';
  mirrorButton.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();toggleMirrorPreview();});
  const flipButton=document.createElement('button');
  flipButton.type='button';flipButton.id='flipBtn';flipButton.className='local-flip-control';
@@ -544,9 +545,15 @@ function addLocalCard(){
   cameraToggle.textContent='📷';
   cameraToggle.title='Encender o apagar cámara';
   cameraToggle.setAttribute('aria-label','Encender o apagar cámara');
-  controls.append(micButton,cameraToggle,flipButton,mirrorButton);
- }else{controls.append(micButton,camButton,flipButton,mirrorButton);}
+  controls.append(micButton,cameraToggle,flipButton);
+ }else{controls.append(micButton,camButton,flipButton);}
  card.querySelector('.name').append(controls);
+ card.append(mirrorButton);
+ const refreshMirrorLabel=()=>{
+  mirrorButton.textContent=mirrorPreview?'🪞 MODO ESPEJO: ACTIVADO':'🪞 ACTIVAR MODO ESPEJO';
+  mirrorButton.setAttribute('aria-pressed',String(mirrorPreview));
+ };
+ refreshMirrorLabel();
  applyMirrorPreview();
  if(isHostController()){
   $('hostReturnTop')?.classList.add('hidden');
