@@ -164,7 +164,7 @@ import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc } fro
 const firebaseConfig={apiKey:'AIzaSyBFFlXMlsQvEAXu-GM69jGH8l1vAF7np5A',authDomain:'homero-live.firebaseapp.com',projectId:'homero-live',storageBucket:'homero-live.firebasestorage.app',messagingSenderId:'1009669708876',appId:'1:1009669708876:web:db1aa3c3355a320f86e8e9',measurementId:'G-3SJ79SQC96'};
 const firebaseApp=initializeApp(firebaseConfig),auth=getAuth(firebaseApp),db=getFirestore(firebaseApp);
 const ADMIN_EMAIL='homero@homero-live.app';let currentUser=null,isAdmin=false;
-const TOKEN_SERVER_ID='homerolive-1yj5wz';
+const TOKEN_SERVER_ID='homerolive-2ms1z2';
 let room=null, roomCode='', cameraOn=false, micOn=false, myName='Invitado', isHostSession=false;
 let participantAudioVolume=0.5;
 function applyParticipantVolume(){document.querySelectorAll('audio[data-remote-participant]').forEach(audio=>{audio.volume=participantAudioVolume;});}
