@@ -105,6 +105,22 @@ body.guest-link #authGate{display:none!important}
 #stage.fullscreen-mode{position:fixed!important;inset:0!important;z-index:99999!important;width:100vw!important;height:100dvh!important;max-height:none!important;border-radius:0!important;background:#000!important;display:flex!important;align-items:center!important;justify-content:center!important}
 #stage.fullscreen-mode .person{width:100%!important;height:100%!important}#stage.fullscreen-mode .person video{width:100%!important;height:100%!important;max-height:100dvh!important;object-fit:contain!important}
 @media(max-width:600px){#aliasAdmin .alias-row{grid-template-columns:1fr}#authGate{margin:8vh 8px 20px}}
+#turnTimer{margin:10px 0 14px;padding:12px;border:1px solid #d4af37;border-radius:13px;background:linear-gradient(145deg,#17130b,#080808);text-align:center}
+#turnTimer h3{margin:2px 0 8px;color:#f5d575}
+#timerPlayer{width:100%;max-width:320px;margin:5px auto;padding:9px;border:1px solid #80672f;border-radius:8px;background:#080808;color:#fff}
+#timerDisplay{font-size:42px;font-weight:900;letter-spacing:2px;color:#f5d575;font-variant-numeric:tabular-nums;line-height:1.2}
+#timerDisplay.warning{color:#ff3939;animation:timerPulse .7s infinite alternate}
+#timerStatus{font-size:12px;color:#c8b98e;margin:4px 0 8px}
+#timerHostControls button{margin:3px;padding:9px 12px;font-size:12px}
+@keyframes timerPulse{from{opacity:1}to{opacity:.55}}
+
+
+/* Indicador de voz activa y mano levantada */
+.person.speaking{outline:3px solid #28d17c;box-shadow:0 0 0 3px #28d17c55,0 0 18px #28d17c88}
+.person.speaking .name-label:after{content:"  🔊 HABLANDO";color:#28d17c;font-weight:900;font-size:11px}
+.person.hand-raised .name-label:before{content:"✋ MANO LEVANTADA · ";color:#f5d575;font-weight:900}
+#handRaiseBtn{display:block;width:100%;margin:8px 0;padding:11px;border:1px solid #d4af37;border-radius:10px;background:#21190b;color:#ffe49b;font-weight:800}
+#handRaiseBtn.active{background:#f5d575;color:#111}
 </style>
 </head>
 <body>
@@ -121,7 +137,7 @@ body.guest-link #authGate{display:none!important}
 <p id="authMessage" aria-live="polite"></p>
 </section>
 <header>👑 HOMERO LIVE</header>
-<section id="home" class="card"><p class="gold">TU SALA. TU COMUNIDAD. EN VIVO.</p><h1>Conectá a tu gente.</h1><p>Videollamada de prueba con cámara, micrófono y comentarios compartidos.</p><label for="name">Tu nombre</label><input id="name" maxlength="40" placeholder="Ej.: Homero"><button id="createRoomBtn" class="primary hidden" onclick="createRoom()">＋ Crear sala (anfitrión)</button><button id="recoverRoomBtn" class="primary hidden" onclick="recoverHostRoom()">♻️ Recuperar mi sala como anfitrión</button><p id="guestRoomStatus" class="note">Compartí el enlace de HOMERO LIVE o escribí el código para entrar a la transmisión.</p><div id="joinBox" class="hidden"><input id="code" maxlength="50" placeholder="Código de sala"><button onclick="enterRoom()">Entrar a la sala</button></div><div id="hostAdmin" class="hidden">
+<section id="home" class="card"><p class="gold">TU SALA. TU COMUNIDAD. EN VIVO.</p><h1>Conectá a tu gente.</h1><p>Videollamada de prueba con cámara, micrófono y comentarios compartidos.</p><label for="name">Tu nombre</label><input id="name" required maxlength="40" placeholder="Ej.: Homero"><button id="createRoomBtn" class="primary hidden" onclick="createRoom()">＋ Crear sala (anfitrión)</button><button id="recoverRoomBtn" class="primary hidden" onclick="recoverHostRoom()">♻️ Recuperar mi sala como anfitrión</button><p id="guestRoomStatus" class="note">Compartí el enlace de HOMERO LIVE o escribí el código para entrar a la transmisión.</p><div id="joinBox" class="hidden"><input id="code" maxlength="50" placeholder="Código de sala"><button onclick="enterRoom()">Entrar a la sala</button></div><div id="hostAdmin" class="hidden">
 <h3 class="gold">👑 Administración de HOMERO</h3>
 <section class="admin-panel"><h3>💳 Datos para transferencias</h3>
 <label for="bankHolder">Nombre del titular</label><input id="bankHolder" maxlength="100" placeholder="Nombre y apellido">
@@ -141,7 +157,7 @@ body.guest-link #authGate{display:none!important}
 <button type="button" onclick="sendReaction('MONO')"><span class="sticker-face">⚀ ⚁</span><span>MONO</span></button>
 </div>
 <div id="chatComposer"><input id="message" placeholder="Escribí un comentario" maxlength="300"><button class="primary" type="button" onclick="sendComment()">Enviar</button></div>
-</div><h3 class="gold">🃏 Participantes</h3><div id="videos" class="videos"></div><div id="soundControls"><button class="primary" id="soundBtn" onclick="activateSound()">🔊 Activar sonido</button><label for="participantVolume">Volumen de participantes: <output id="participantVolumeValue">50%</output></label><input id="participantVolume" type="range" min="0" max="100" value="50" step="1" aria-label="Volumen de participantes"></div></section>
+</div><section id="turnTimer" aria-live="polite"><h3>⏱️ TIEMPO DEL JUGADOR</h3><div id="timerPlayerLabel">Turno sin iniciar</div><div id="timerDisplay">01:00</div><div id="timerStatus">Cada jugador tiene 60 segundos</div><div id="timerHostControls" class="hidden"><input id="timerPlayer" maxlength="40" placeholder="Nombre del jugador (opcional)"><div><button type="button" class="primary" id="timerStartBtn" onclick="startTurnTimer()">▶️ Iniciar 1 minuto</button><button type="button" id="timerPauseBtn" onclick="pauseTurnTimer()">⏸️ Pausar</button><button type="button" id="timerResetBtn" onclick="resetTurnTimer()">↻ Reiniciar</button></div></div></section><h3 class="gold">🃏 Participantes</h3><button type="button" id="handRaiseBtn" onclick="toggleHandRaise()">✋ LEVANTAR LA MANO</button><h3 class="gold">🃏 Participantes</h3><div id="videos" class="videos"></div><div id="soundControls"><button class="primary" id="soundBtn" onclick="activateSound()">🔊 Activar sonido</button><label for="participantVolume">Volumen de participantes: <output id="participantVolumeValue">50%</output></label><input id="participantVolume" type="range" min="0" max="100" value="50" step="1" aria-label="Volumen de participantes"></div></section>
 <p class="note">HOMERO LIVE usa el servidor de desarrollo de LiveKit. Para producción, se debe sustituir por un servidor seguro de tokens.</p>
 <script>
 /* Los controles de anfitrión permanecen ocultos hasta validar la cuenta administradora. */
@@ -206,9 +222,16 @@ onAuthStateChanged(auth,async user=>{
   document.body.classList.add('guest-link');
   ['authGate','createRoomBtn','recoverRoomBtn','endLiveBtn','hostAdmin','logoutBtn'].forEach(id=>$(id)?.classList.add('hidden'));
   $('home')?.classList.add('hidden');
-  $('name').value=safeName(inviteParams.get('nombre')||'Invitado');
+  $('name').value=(inviteParams.get('nombre')||'').trim();
   roomCode=inviteRoom.trim().toUpperCase();
   $('code').value=roomCode;
+  if(!$('name').value){
+   $('home')?.classList.remove('hidden');
+   $('joinBox')?.classList.remove('hidden');
+   $('guestRoomStatus').textContent='Antes de ingresar, escribí tu nombre y luego tocá Entrar a la sala.';
+   return;
+  }
+  myName=$('name').value.trim();
   showRoom();
   try{await connectRoom();}
   catch(e){setStatus('No se pudo conectar a la sala: '+e.message+' · Revisá el enlace.');console.error(e);}
@@ -222,12 +245,18 @@ onAuthStateChanged(auth,async user=>{
    document.body.classList.add('guest-link');
    ['authGate','createRoomBtn','recoverRoomBtn','endLiveBtn','hostAdmin','logoutBtn'].forEach(id=>$(id)?.classList.add('hidden'));
    roomCode=requestedRoom.trim().toUpperCase();
-   myName=safeName(params.get('nombre')||$('name').value||'Invitado');
+   myName=(params.get('nombre')||$('name').value||'').trim();
    $('name').value=myName;
    $('code').value=roomCode;
-   showRoom();
-   try{await connectRoom();}
-   catch(e){setStatus('No se pudo conectar a la sala: '+e.message+' · Revisá el enlace.');console.error(e);}
+   if(!myName){
+    $('home')?.classList.remove('hidden');
+    $('joinBox')?.classList.remove('hidden');
+    $('guestRoomStatus').textContent='Antes de ingresar, escribí tu nombre y luego tocá Entrar a la sala.';
+   }else{
+    showRoom();
+    try{await connectRoom();}
+    catch(e){setStatus('No se pudo conectar a la sala: '+e.message+' · Revisá el enlace.');console.error(e);}
+   }
   }else{
    $('authGate').classList.remove('hidden');
   }
@@ -303,6 +332,52 @@ window.toggleViewerList=()=>{const list=$('viewerList'),btn=$('viewerCountBtn');
 let featuredIdentity=null;
 let pendingFeaturedIdentity=null;
 
+
+let mirrorPreview=true;
+try{mirrorPreview=localStorage.getItem('homero_mirror_preview')!=='0'}catch(e){}
+async function hostMuteParticipant(identity){
+ if(!isHostSession||!room?.localParticipant||!identity)return;
+ try{
+  const payload=new TextEncoder().encode(JSON.stringify({type:'hostMuteMic',target:identity}));
+  await room.localParticipant.publishData(payload,{reliable:true,destinationIdentities:[identity]});
+  setStatus('Se solicitó silenciar el micrófono de '+(room.remoteParticipants.get(identity)?.name||identity)+'. El participante puede volver a encenderlo cuando quiera.');
+ }catch(e){setStatus('No se pudo enviar la orden de silencio: '+e.message)}
+}
+window.hostMuteParticipant=hostMuteParticipant;
+function applyMirrorPreview(){
+ const video=$('p-'+room?.localParticipant?.identity)?.querySelector('video');
+ if(video)video.style.transform=mirrorPreview?'scaleX(-1)':'scaleX(1)';
+ const btn=$('mirrorPreviewBtn');
+ if(btn){btn.textContent=mirrorPreview?'🪞 MODO ESPEJO: ACTIVADO':'↔ MODO NORMAL: ACTIVADO';btn.title=mirrorPreview?'Cambiar a imagen normal':'Cambiar a modo espejo';btn.setAttribute('aria-pressed',String(mirrorPreview));}
+}
+window.toggleMirrorPreview=()=>{
+ mirrorPreview=!mirrorPreview;
+ try{localStorage.setItem('homero_mirror_preview',mirrorPreview?'1':'0')}catch(e){}
+ applyMirrorPreview();
+ setStatus(mirrorPreview?'Vista previa en modo espejo.':'Vista previa en modo normal.');
+};
+const raisedHands=new Set();
+let myHandRaised=false;
+function renderHandState(identity){
+ const card=document.getElementById('p-'+identity);
+ if(card)card.classList.toggle('hand-raised',raisedHands.has(identity));
+}
+function setHandState(identity,raised){
+ if(!identity)return;
+ if(raised)raisedHands.add(identity);else raisedHands.delete(identity);
+ renderHandState(identity);
+}
+window.toggleHandRaise=async()=>{
+ if(!room?.localParticipant){setStatus('Primero ingresá a una sala.');return;}
+ myHandRaised=!myHandRaised;
+ const identity=room.localParticipant.identity;
+ setHandState(identity,myHandRaised);
+ const btn=$('handRaiseBtn');
+ if(btn){btn.classList.toggle('active',myHandRaised);btn.textContent=myHandRaised?'✋ MANO LEVANTADA (TOCÁ PARA BAJAR)':'✋ LEVANTAR LA MANO';}
+ try{const payload=new TextEncoder().encode(JSON.stringify({type:'handRaise',identity,raised:myHandRaised,name:myName}));await room.localParticipant.publishData(payload,{reliable:true});}
+ catch(e){setStatus('No se pudo avisar que levantaste la mano: '+e.message);}
+};
+
 function isHostParticipant(p){
  return !!p?.identity?.startsWith('host-');
 }
@@ -358,6 +433,14 @@ function ensureHostGuestControl(participant){
  button.style.setProperty('display','block','important');
  button.style.setProperty('visibility','visible','important');
  button.style.setProperty('opacity','1','important');
+ let mute=card.querySelector('.host-mute-person');
+ if(!mute){
+  mute=document.createElement('button');mute.type='button';mute.className='host-mute-person';
+  mute.textContent='🔇 SILENCIAR';mute.title='Pedir al participante que apague su micrófono';
+  mute.style.cssText='display:block;width:100%;padding:10px;margin-top:5px;background:#8b1e1e;color:#fff;font-weight:bold;border-radius:8px;touch-action:manipulation';
+  mute.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();hostMuteParticipant(identity);});
+  card.append(mute);
+ }
 }
 
 function addPerson(participant,track=null){
@@ -398,6 +481,7 @@ function addPerson(participant,track=null){
   $('videos').append(card);
  }
  ensureHostGuestControl(participant);
+ renderHandState(identity);
 
  if(pendingFeaturedIdentity===identity){
   showFeatured(identity,false);
@@ -416,6 +500,7 @@ function addPerson(participant,track=null){
 
 function removePerson(participant){
  const id=participant.identity;
+ raisedHands.delete(id);
   for(const audio of document.querySelectorAll('audio[data-remote-participant]')){if(audio.dataset.remoteParticipant===id)audio.remove();}
  const el=document.getElementById('p-'+id);
  if(el)el.remove();
@@ -444,6 +529,10 @@ function addLocalCard(){
  camButton.setAttribute('aria-label','Activar cámara');camButton.title='Activar o apagar mi cámara';
  camButton.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();toggleCamera();});
  const cameraToggle=$('camBtn');
+ const mirrorButton=document.createElement('button');
+ mirrorButton.type='button';mirrorButton.id='mirrorPreviewBtn';mirrorButton.className='local-mirror-control';
+ mirrorButton.style.cssText='display:block!important;visibility:visible!important;opacity:1!important;width:100%;min-height:42px;margin:7px 0 0;padding:9px 12px;background:#f5d575;color:#15100a;border:2px solid #d4af37;border-radius:10px;font-weight:900;font-size:14px;line-height:1.2;position:relative;z-index:50;touch-action:manipulation';
+ mirrorButton.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();toggleMirrorPreview();});
  const flipButton=document.createElement('button');
  flipButton.type='button';flipButton.id='flipBtn';flipButton.className='local-flip-control';
  flipButton.textContent='🔄';flipButton.title='Girar cámara';flipButton.setAttribute('aria-label','Girar cámara');
@@ -457,6 +546,8 @@ function addLocalCard(){
   controls.append(micButton,cameraToggle,flipButton);
  }else{controls.append(micButton,camButton,flipButton);}
  card.querySelector('.name').append(controls);
+ card.append(mirrorButton);
+ applyMirrorPreview();
  if(isHostController()){
   $('hostReturnTop')?.classList.add('hidden');
   const backButton=document.createElement('button');
@@ -509,11 +600,43 @@ window.activateSound=async()=>{
   setStatus('Sonido habilitado. Ya podés escuchar a los participantes que tengan el micrófono encendido.');
  }catch(e){setStatus('No se pudo activar el sonido: '+e.message);}
 };
-async function connectRoom(){if(room)return;myName=safeName($('name').value);room=new Room({adaptiveStream:true,dynacast:true});room.on(RoomEvent.TrackSubscribed,(track,publication,participant)=>attachRemoteMedia(track,participant));room.on(RoomEvent.TrackUnsubscribed,(track)=>{for(const el of track.detach())el.remove();});room.on(RoomEvent.ParticipantConnected,p=>{addPerson(p);ensureHostGuestControl(p);updateViewerList();setStatus((p.name||p.identity)+' se unió')});room.on(RoomEvent.ParticipantDisconnected,p=>{removePerson(p);updateViewerList();setStatus((p.name||p.identity)+' salió')});room.on(RoomEvent.DataReceived,async(payload,participant)=>{try{const data=JSON.parse(new TextDecoder().decode(payload));if(data.type==='chat'){appendComment(data.name,data.text)}else if(data.type==='sticker'&&data.sticker){appendSticker(data.name||participant?.name||'Participante',data.sticker)}else if(data.type==='spotlight'&&data.identity&&isHostParticipant(participant)){showFeatured(data.identity,false)}}catch(e){}});room.on(RoomEvent.Disconnected,()=>setStatus('Desconectado de la sala.'));const source=TokenSource.developmentTokenServer(TOKEN_SERVER_ID);const hostIdentity=isHostSession?(localStorage.getItem('homero_host_identity')||('host-'+Math.random().toString(36).slice(2,10))):null;if(isHostSession)localStorage.setItem('homero_host_identity',hostIdentity);const creds=await source.fetch({roomName:roomCode,participantName:myName,participantIdentity:(isHostSession?hostIdentity:'u-'+Math.random().toString(36).slice(2,10))});await room.connect(creds.serverUrl,creds.participantToken);addLocalCard();renderViewerList();for(const p of room.remoteParticipants.values()){addPerson(p);ensureHostGuestControl(p);for(const pub of p.trackPublications.values()){if(pub.track&&pub.isSubscribed)attachRemoteMedia(pub.track,p)}}updateViewerList();setStatus('Conectado a la sala. Activá cámara y micrófono.');}
+async function connectRoom(){if(room)return;myName=safeName($('name').value);if(!myName||myName==='Invitado'&&!$('name').value.trim())throw new Error('El nombre es obligatorio.');room=new Room({adaptiveStream:true,dynacast:true});room.on(RoomEvent.TrackSubscribed,(track,publication,participant)=>attachRemoteMedia(track,participant));room.on(RoomEvent.TrackUnsubscribed,(track)=>{for(const el of track.detach())el.remove();});room.on(RoomEvent.ParticipantConnected,p=>{addPerson(p);ensureHostGuestControl(p);updateViewerList();setStatus((p.name||p.identity)+' se unió')});room.on(RoomEvent.ParticipantDisconnected,p=>{removePerson(p);updateViewerList();setStatus((p.name||p.identity)+' salió')});room.on(RoomEvent.DataReceived,async(payload,participant)=>{
+ try{
+  const data=JSON.parse(new TextDecoder().decode(payload));
+  if(data.type==='chat'){appendComment(data.name,data.text)}
+  else if(data.type==='sticker'&&data.sticker){appendSticker(data.name||participant?.name||'Participante',data.sticker)}
+  else if(data.type==='hostMuteMic'&&!isHostSession&&isHostParticipant(participant)&&data.target===room?.localParticipant?.identity){
+   await room.localParticipant.setMicrophoneEnabled(false);
+   micOn=false;
+   document.querySelectorAll('.local-mic-control').forEach(button=>{button.textContent='🎙️';button.setAttribute('aria-label','Activar mi micrófono');button.title='Activar mi micrófono';});
+   setStatus('El anfitrión te pidió silenciar el micrófono. Podés volver a encenderlo cuando quieras.');
+  }else if(data.type==='spotlightRequest'&&isHostSession&&participant?.identity){
+   const selected=featuredIdentity||room?.localParticipant?.identity;
+   if(selected){
+    const reply=new TextEncoder().encode(JSON.stringify({type:'spotlight',identity:selected}));
+    room.localParticipant.publishData(reply,{reliable:true,destinationIdentities:[participant.identity]}).catch(err=>console.error('No se pudo enviar la pantalla principal al nuevo invitado:',err));
+   }
+  }else if(data.type==='spotlight'&&data.identity&&isHostParticipant(participant)){
+   showFeatured(data.identity,false);
+  }else if(data.type==='handRaise'){
+   setHandState(data.identity,!!data.raised);
+   if(data.raised)appendComment(data.name||participant?.name||'Participante','✋ levantó la mano');
+  }else if(data.type==='turnTimer'&&isHostParticipant(participant)){
+   applyTurnTimerState(data.state,false);
+  }
+ }catch(e){console.warn('Mensaje de sala no procesado:',e)}
+});room.on(RoomEvent.Disconnected,()=>setStatus('Desconectado de la sala.'));const source=TokenSource.developmentTokenServer(TOKEN_SERVER_ID);const hostIdentity=isHostSession?(localStorage.getItem('homero_host_identity')||('host-'+Math.random().toString(36).slice(2,10))):null;if(isHostSession)localStorage.setItem('homero_host_identity',hostIdentity);const creds=await source.fetch({roomName:roomCode,participantName:myName,participantIdentity:(isHostSession?hostIdentity:'u-'+Math.random().toString(36).slice(2,10))});await room.connect(creds.serverUrl,creds.participantToken);addLocalCard();renderViewerList();for(const p of room.remoteParticipants.values()){addPerson(p);ensureHostGuestControl(p);for(const pub of p.trackPublications.values()){if(pub.track&&pub.isSubscribed)attachRemoteMedia(pub.track,p)}}updateViewerList();
+if(!isHostSession){
+ const request=new TextEncoder().encode(JSON.stringify({type:'spotlightRequest'}));
+ room.localParticipant.publishData(request,{reliable:true}).catch(err=>console.error('No se pudo solicitar la pantalla principal:',err));
+}
+if(isHostSession){$('timerHostControls')?.classList.remove('hidden');$('timerStatus').textContent='Control exclusivo del anfitrión · 60 segundos por turno';}
+applyMirrorPreview();
+setStatus('Conectado a la sala. Activá cámara y micrófono.');}
 function showRoom(){ $('home').classList.add('hidden');$('room').classList.remove('hidden');$('roomName').textContent='Sala '+roomCode;history.replaceState({},'', '?sala='+encodeURIComponent(roomCode));}
-window.createRoom=async()=>{if(!isAdmin||new URLSearchParams(location.search).has('sala')){alert('Solo el anfitrión puede crear una sala.');return}isHostSession=true;roomCode='HO'+Math.random().toString(36).slice(2,7).toUpperCase();localStorage.setItem('homero_host_room',roomCode);localStorage.setItem('homero_host_identity','host-'+Math.random().toString(36).slice(2,10));try{await setDoc(doc(db,'configuracion','salaActiva'),{codigo:roomCode,activa:true,actualizada:Date.now()});showRoom();await connectRoom()}catch(e){setStatus('No se pudo crear/publicar la sala: '+e.message);console.error(e)}};
+window.createRoom=async()=>{if(!$('name').value.trim()){alert('Escribí tu nombre antes de crear la sala.');$('name').focus();return}myName=$('name').value.trim();if(!isAdmin||new URLSearchParams(location.search).has('sala')){alert('Solo el anfitrión puede crear una sala.');return}isHostSession=true;roomCode='HO'+Math.random().toString(36).slice(2,7).toUpperCase();localStorage.setItem('homero_host_room',roomCode);localStorage.setItem('homero_host_identity','host-'+Math.random().toString(36).slice(2,10));try{await setDoc(doc(db,'configuracion','salaActiva'),{codigo:roomCode,activa:true,actualizada:Date.now()});showRoom();await connectRoom()}catch(e){setStatus('No se pudo crear/publicar la sala: '+e.message);console.error(e)}};
 window.recoverHostRoom=async()=>{if(!isAdmin){alert('Acceso exclusivo del administrador.');return}const savedRoom=localStorage.getItem('homero_host_room');if(!savedRoom){alert('No hay una sala anterior guardada en este teléfono.');return}isHostSession=true;roomCode=savedRoom;await setDoc(doc(db,'configuracion','salaActiva'),{codigo:roomCode,activa:true,actualizada:Date.now()});showRoom();$('endLiveBtn').classList.remove('hidden');try{await connectRoom()}catch(e){setStatus('No se pudo recuperar la sala: '+e.message);console.error(e)}};
-window.enterRoom=async()=>{isHostSession=false;roomCode=$('code').value.trim().toUpperCase();if(!roomCode){alert('Escribí el código de sala.');return}myName=safeName($('name').value||'Invitado');document.body.classList.add('guest-link');$('authGate').classList.add('hidden');showRoom();try{await connectRoom()}catch(e){setStatus('No se pudo conectar: '+e.message+' · Revisá el código y el servidor de prueba.');console.error(e)}};
+window.enterRoom=async()=>{if(!$('name').value.trim()){alert('Escribí tu nombre antes de ingresar.');$('name').focus();return}myName=$('name').value.trim();isHostSession=false;roomCode=$('code').value.trim().toUpperCase();if(!roomCode){alert('Escribí el código de sala.');return}myName=safeName($('name').value||'Invitado');document.body.classList.add('guest-link');$('authGate').classList.add('hidden');showRoom();try{await connectRoom()}catch(e){setStatus('No se pudo conectar: '+e.message+' · Revisá el código y el servidor de prueba.');console.error(e)}};
 let cameraStarting=false;
 const cameraControl=()=>document.querySelector('.local-cam-control');
 window.toggleCamera=async()=>{
@@ -550,7 +673,7 @@ window.toggleCamera=async()=>{
   try{await video.play()}catch(e){
    setStatus('La cámara está encendida. Tocá el video para permitir la reproducción.');
   }
-  cameraOn=true;
+  cameraOn=true;applyMirrorPreview();
   cameraControl().textContent='🔴';document.querySelectorAll('.local-camera-control').forEach(b=>b.textContent='📷');document.querySelectorAll('.local-cam-control').forEach(b=>{b.textContent='🔴';b.setAttribute('aria-label','Apagar cámara');});
   setStatus('Cámara encendida.');
  }catch(e){
@@ -643,6 +766,37 @@ function renderViewerList(){
  people.forEach(p=>{const row=document.createElement('div');row.textContent='👤 '+p.name;row.style.padding='6px 2px';box.append(row)});
  if(!people.length){const row=document.createElement('div');row.textContent='Todavía no hay espectadores conectados';box.append(row)}
 }
+const TURN_TIME_MS=60000;
+let turnTimerState={running:false,remainingMs:TURN_TIME_MS,endAt:null,player:''};
+let turnTimerInterval=null;
+let timerLastSecond=60;
+function formatTimer(ms){const sec=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')}
+function renderTurnTimer(){
+ const remaining=turnTimerState.running?Math.max(0,turnTimerState.endAt-Date.now()):turnTimerState.remainingMs;
+ const display=$('timerDisplay');if(!display)return;
+ display.textContent=formatTimer(remaining);
+ display.classList.toggle('warning',remaining<=10000);
+ $('timerPlayerLabel').textContent=turnTimerState.player?('Turno de: '+turnTimerState.player):(turnTimerState.running?'Turno en curso':'Turno sin iniciar');
+ if(turnTimerState.running){$('timerStatus').textContent=remaining<=0?'¡TIEMPO AGOTADO!':(remaining<=10000?'¡Últimos segundos!':'Tiempo restante del jugador');}
+ else if(remaining===0){$('timerStatus').textContent='Tiempo agotado';}
+ else if(remaining<TURN_TIME_MS){$('timerStatus').textContent='Cronómetro pausado';}
+ else{$('timerStatus').textContent='Cada jugador tiene 60 segundos';}
+}
+function timerBeep(){
+ try{const Ctx=window.AudioContext||window.webkitAudioContext;if(!Ctx)return;const ctx=new Ctx();const osc=ctx.createOscillator();const gain=ctx.createGain();osc.connect(gain);gain.connect(ctx.destination);osc.frequency.value=880;gain.gain.setValueAtTime(.001,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.18,ctx.currentTime+.03);gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.45);osc.start();osc.stop(ctx.currentTime+.46);osc.onended=()=>ctx.close();}catch(e){}
+}
+function broadcastTurnTimer(){
+ if(!isHostSession||!room?.localParticipant)return;
+ const payload=new TextEncoder().encode(JSON.stringify({type:'turnTimer',state:turnTimerState}));
+ room.localParticipant.publishData(payload,{reliable:true}).catch(e=>console.warn('No se pudo sincronizar el cronómetro:',e));
+}
+function applyTurnTimerState(state,broadcast=false){
+ if(!state||typeof state!=='object')return;
+ const wasRunning=turnTimerState.running;
+ turnTimerState={running:!!state.running,remainingMs:Math.max(0,Math.min(TURN_TIME_MS,Number(state.remainingMs)||0)),endAt:Number(state.endAt)||null,player:String(state.player||'').slice(0,40)};
+ if(turnTimerState.running&&!turnTimerInterval){turnTimerInterval=setInterval(tickTurnTimer,200);}
+ if(!turnTimerState.running&&turnTimerInterval){clearInterval(turnTimerInterval);turnTimerInterval=null;}
+ renderTurnTimer();
 const homeroStickerCatalog=[
  {label:'7/11 LA CLAVADA',emoji:'🎲🎲',caption:'7/11 LA CLAVADA'},
  {label:'BUSCAMOS BUENA',emoji:'🔎🎲',caption:'BUSCAMOS BUENA'},
