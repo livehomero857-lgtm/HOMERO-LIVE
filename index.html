@@ -121,6 +121,18 @@ body.guest-link #authGate{display:none!important}
 .person.hand-raised .name-label:before{content:"✋ MANO LEVANTADA · ";color:#f5d575;font-weight:900}
 #handRaiseBtn{display:block;width:100%;margin:8px 0;padding:11px;border:1px solid #d4af37;border-radius:10px;background:#21190b;color:#ffe49b;font-weight:800}
 #handRaiseBtn.active{background:#f5d575;color:#111}
+/* Control espejo del anfitrión: siempre visible debajo de su video */
+#stage .person #mirrorPreviewBtn,
+#stage .person .local-mirror-control{
+ display:flex!important;visibility:visible!important;opacity:1!important;
+ position:relative!important;z-index:2147483000!important;
+ width:100%!important;min-height:48px!important;margin:8px 0 4px!important;
+ align-items:center!important;justify-content:center!important;
+ background:#f5d575!important;color:#15100a!important;
+ border:2px solid #d4af37!important;border-radius:12px!important;
+ font-weight:900!important;font-size:15px!important;
+ touch-action:manipulation!important;
+}
 </style>
 </head>
 <body>
@@ -345,10 +357,20 @@ async function hostMuteParticipant(identity){
 }
 window.hostMuteParticipant=hostMuteParticipant;
 function applyMirrorPreview(){
- const video=$('p-'+room?.localParticipant?.identity)?.querySelector('video');
- if(video)video.style.transform=mirrorPreview?'scaleX(-1)':'scaleX(1)';
+ const localIdentity=room?.localParticipant?.identity;
+ const video=localIdentity?$('p-'+localIdentity)?.querySelector('video'):null;
+ if(video){
+  const transform=mirrorPreview?'scaleX(-1)':'scaleX(1)';
+  video.style.setProperty('transform',transform,'important');
+  video.style.setProperty('-webkit-transform',transform,'important');
+  video.style.transformOrigin='center center';
+ }
  const btn=$('mirrorPreviewBtn');
- if(btn){btn.textContent=mirrorPreview?'🪞 MODO ESPEJO: ACTIVADO':'↔ MODO NORMAL: ACTIVADO';btn.title=mirrorPreview?'Cambiar a imagen normal':'Cambiar a modo espejo';btn.setAttribute('aria-pressed',String(mirrorPreview));}
+ if(btn){
+  btn.textContent=mirrorPreview?'🪞 MODO ESPEJO: ACTIVADO':'🪞 ACTIVAR MODO ESPEJO';
+  btn.title=mirrorPreview?'Cambiar a imagen normal':'Cambiar a modo espejo';
+  btn.setAttribute('aria-pressed',String(mirrorPreview));
+ }
 }
 window.toggleMirrorPreview=()=>{
  mirrorPreview=!mirrorPreview;
@@ -530,11 +552,7 @@ function addLocalCard(){
  camButton.setAttribute('aria-label','Activar cámara');camButton.title='Activar o apagar mi cámara';
  camButton.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();toggleCamera();});
  const cameraToggle=$('camBtn');
- const mirrorButton=document.createElement('button');
- mirrorButton.type='button';mirrorButton.id='mirrorPreviewBtn';mirrorButton.className='local-mirror-control';
- mirrorButton.textContent='🪞 ACTIVAR MODO ESPEJO';
- mirrorButton.style.cssText='display:flex!important;visibility:visible!important;opacity:1!important;align-items:center;justify-content:center;width:100%!important;min-width:100%!important;min-height:46px;margin:8px 0 4px!important;padding:10px 14px!important;box-sizing:border-box!important;background:#f5d575!important;color:#15100a!important;border:2px solid #d4af37!important;border-radius:12px!important;font-weight:900!important;font-size:15px!important;line-height:1.2!important;position:relative!important;z-index:100!important;touch-action:manipulation!important;white-space:normal!important;flex:0 0 100%!important';
- mirrorButton.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();toggleMirrorPreview();});
+
  const flipButton=document.createElement('button');
  flipButton.type='button';flipButton.id='flipBtn';flipButton.className='local-flip-control';
  flipButton.textContent='🔄';flipButton.title='Girar cámara';flipButton.setAttribute('aria-label','Girar cámara');
@@ -548,12 +566,6 @@ function addLocalCard(){
   controls.append(micButton,cameraToggle,flipButton);
  }else{controls.append(micButton,camButton,flipButton);}
  card.querySelector('.name').append(controls);
- card.append(mirrorButton);
- const refreshMirrorLabel=()=>{
-  mirrorButton.textContent=mirrorPreview?'🪞 MODO ESPEJO: ACTIVADO':'🪞 ACTIVAR MODO ESPEJO';
-  mirrorButton.setAttribute('aria-pressed',String(mirrorPreview));
- };
- refreshMirrorLabel();
  applyMirrorPreview();
  if(isHostController()){
   $('hostReturnTop')?.classList.add('hidden');
@@ -563,6 +575,14 @@ function addLocalCard(){
   backButton.textContent='👑 VOLVER A MI PANTALLA';
   backButton.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();showFeatured(lp.identity);});
   card.append(backButton);
+  const mirrorButton=document.createElement('button');
+  mirrorButton.type='button';
+  mirrorButton.id='mirrorPreviewBtn';
+  mirrorButton.className='local-mirror-control';
+  mirrorButton.style.cssText='display:flex!important;visibility:visible!important;opacity:1!important;align-items:center;justify-content:center;width:100%!important;min-height:48px;margin:8px 0 4px!important;padding:11px 14px!important;box-sizing:border-box!important;background:#f5d575!important;color:#15100a!important;border:2px solid #d4af37!important;border-radius:12px!important;font-weight:900!important;font-size:15px!important;line-height:1.2!important;position:relative!important;z-index:2147483000!important;touch-action:manipulation!important;white-space:normal!important';
+  mirrorButton.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();toggleMirrorPreview();});
+  card.append(mirrorButton);
+  applyMirrorPreview();
   const cleanNullText=()=>{
    card.childNodes.forEach(node=>{
     if(node.nodeType===Node.TEXT_NODE && node.textContent.trim()==='null') node.remove();
