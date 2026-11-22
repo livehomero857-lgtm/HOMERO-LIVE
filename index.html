@@ -952,8 +952,6 @@ if(e.key==='Enter')window.sendComment();
 
 // Los botones de anfitrión solo se muestran después de validar ADMIN_EMAIL.
 
-// No iniciar sesión anónima automáticamente: esperar la restauración de Firebase.
-
 const existing=new URLSearchParams(location.search).get('sala');
 if(existing){
 roomCode=existing.trim().toUpperCase();
