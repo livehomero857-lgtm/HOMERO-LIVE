@@ -107,6 +107,31 @@ body.guest-link #authGate{display:none!important}
 @media(max-width:600px){#aliasAdmin .alias-row{grid-template-columns:1fr}#authGate{margin:8vh 8px 20px}}
 
 
+/* Participantes laterales y señal visual de voz */
+#liveStickyArea{display:grid!important;grid-template-columns:minmax(48px,.78fr) minmax(0,5fr) minmax(48px,.78fr)!important;gap:6px;align-items:start}
+#liveStickyArea .live-topline{grid-column:1/-1;grid-row:1}
+#stage{grid-column:2;grid-row:2;min-width:0;margin:0}
+#videos{display:contents!important}
+#videos .person{grid-column:1;width:100%;min-width:0;max-width:100%;padding:3px;border:2px solid #e0b93e;background:#090805;border-radius:9px;overflow:hidden}
+#videos .person:nth-child(even){grid-column:3}
+#videos .person:nth-child(odd){grid-column:1}
+#videos .person video{width:100%;height:auto;aspect-ratio:3/4;object-fit:cover;border-radius:6px}
+#videos .person .name{display:block;text-align:center;font-size:9px;line-height:1.1;padding:3px}
+#videos .person .name-label{display:block;overflow-wrap:anywhere}
+#videos .person.speaking{border:3px solid #20e477!important;box-shadow:0 0 12px #20e477aa!important}
+#videos .person.speaking .name-label:after{content:" · HABLANDO";display:block;color:#20e477;font-weight:900}
+#videos .person.mic-muted{border-color:#777!important;opacity:.7}
+#videos .person.mic-muted .name-label:after{content:" · MIC APAGADO";display:block;color:#aaa;font-size:8px}
+#videos .person:not(.speaking):not(.mic-muted){border-color:#e0b93e!important;box-shadow:0 0 8px #e0b93e55}
+#videos .person .local-controls{display:flex;flex-direction:column;gap:2px}
+#videos .person .local-controls button{font-size:10px!important;min-width:0!important;padding:3px!important;margin:1px!important}
+#videos .person .enlarge-person,#videos .person .host-mute-person{font-size:8px!important;padding:3px!important;min-width:0!important;overflow-wrap:anywhere}
+@media(max-width:600px){
+ #liveStickyArea{grid-template-columns:minmax(44px,.8fr) minmax(0,5fr) minmax(44px,.8fr)!important;gap:4px}
+ #stage .person video{height:clamp(240px,48vh,500px)!important}
+ #videos .person .name{font-size:8px}
+}
+
 /* Indicador de voz activa y mano levantada */
 .person.speaking{outline:3px solid #28d17c;box-shadow:0 0 0 3px #28d17c55,0 0 18px #28d17c88}
 .person.speaking .name-label:after{content:"  🔊 HABLANDO";color:#28d17c;font-weight:900;font-size:11px}
@@ -144,7 +169,7 @@ body.guest-link #authGate{display:none!important}
 </section></div>
 <div id="bankPublic" class="bank-public hidden"><h3 class="gold">💳 ¿Dónde transferir?</h3><p><b>Titular:</b> <span id="bankHolderView">Sin configurar</span></p><p><b>Banco:</b> <span id="bankNameView">Sin configurar</span></p><p><b>Alias:</b> <span id="bankAliasView">Sin configurar</span> <button type="button" id="copyBankAlias">Copiar</button></p></div><button id="logoutBtn" class="hidden" type="button" onclick="logoutHomero()">Cerrar sesión</button></section>
 <section id="room" class="hidden"><div class="card"><button onclick="leaveRoom()">← Salir</button><button onclick="shareRoom()">Compartir enlace</button><button onclick="whatsapp()">WhatsApp</button><button id="endLiveBtn" class="primary hidden" onclick="endLive()">🔴 Apagar LIVE</button><h2 id="roomName" class="gold">Sala HOMERO</h2><div id="bankPublicRoom" class="bank-public hidden"><h3 class="gold">💳 Datos para transferencias</h3><p><b>Titular:</b> <span id="bankHolderRoom">Sin configurar</span></p><p><b>Banco:</b> <span id="bankNameRoom">Sin configurar</span></p><p><b>Alias:</b> <span id="bankAliasRoom">Sin configurar</span> <button type="button" id="copyBankAliasRoom">Copiar</button></p></div>
-<p id="status" class="status">Preparando conexión…</p><div id="liveStickyArea"><div class="live-topline"><h3 class="gold">👑 Anfitrión / pantalla principal</h3><button id="stageFullscreenBtn" type="button" onclick="toggleStageFullscreen()">⛶ Ampliar</button><div class="viewer-wrap"><button id="viewerCountBtn" class="viewer-count" type="button" onclick="toggleViewerList()" aria-expanded="false">👁️ 0 mirando ▾</button><div id="viewerList" class="viewer-list hidden" aria-live="polite"></div></div></div><div id="stage" class="stage"><p class="note">La pantalla principal aparece al conectarse.</p><div id="chatBubbles" aria-live="polite"></div></div></div><div class="card" id="commentsCard"><h3>💬 Comentarios de la sala</h3>
+<p id="status" class="status">Preparando conexión…</p><div id="liveStickyArea"><div class="live-topline"><h3 class="gold">👑 Anfitrión / pantalla principal</h3><button id="stageFullscreenBtn" type="button" onclick="toggleStageFullscreen()">⛶ Ampliar</button><div class="viewer-wrap"><button id="viewerCountBtn" class="viewer-count" type="button" onclick="toggleViewerList()" aria-expanded="false">👁️ 0 mirando ▾</button><div id="viewerList" class="viewer-list hidden" aria-live="polite"></div></div></div><div id="stage" class="stage"><p class="note">La pantalla principal aparece al conectarse.</p><div id="chatBubbles" aria-live="polite"></div></div><div id="videos" class="videos" aria-label="Participantes a los lados de la pantalla principal"></div></div><div class="card" id="commentsCard"><h3>💬 Comentarios de la sala</h3>
 <div id="comments" aria-live="polite"><p>Bienvenido a HOMERO LIVE.</p></div>
 <div id="reactionBar" aria-label="Stickers de Homero">
 <button type="button" onclick="sendReaction('7/11 LA CLAVADA')"><span class="sticker-face">🎲🎲</span><span>7/11 LA CLAVADA</span></button>
@@ -154,7 +179,7 @@ body.guest-link #authGate{display:none!important}
 <button type="button" onclick="sendReaction('MONO')"><span class="sticker-face">⚀ ⚁</span><span>MONO</span></button>
 </div>
 <div id="chatComposer"><input id="message" placeholder="Escribí un comentario" maxlength="300"><button class="primary" type="button" onclick="sendComment()">Enviar</button></div>
-</div><h3 class="gold">🃏 Participantes</h3><button type="button" id="handRaiseBtn" onclick="toggleHandRaise()">✋ LEVANTAR LA MANO</button><h3 class="gold">🃏 Participantes</h3><div id="videos" class="videos"></div><div id="soundControls"><button class="primary" id="soundBtn" onclick="activateSound()">🔊 Activar sonido</button><label for="participantVolume">Volumen de participantes: <output id="participantVolumeValue">50%</output></label><input id="participantVolume" type="range" min="0" max="100" value="50" step="1" aria-label="Volumen de participantes"></div></section>
+</div><button type="button" id="handRaiseBtn" onclick="toggleHandRaise()">✋ LEVANTAR LA MANO</button><div id="soundControls"><button class="primary" id="soundBtn" onclick="activateSound()">🔊 Activar sonido</button><label for="participantVolume">Volumen de participantes: <output id="participantVolumeValue">50%</output></label><input id="participantVolume" type="range" min="0" max="100" value="50" step="1" aria-label="Volumen de participantes"></div></section>
 <p class="note">HOMERO LIVE usa el servidor de desarrollo de LiveKit. Para producción, se debe sustituir por un servidor seguro de tokens.</p>
 <script>
 /* Los controles de anfitrión permanecen ocultos hasta validar la cuenta administradora. */
@@ -423,6 +448,11 @@ function addPerson(participant,track=null){
 
  }
 
+ const liveParticipant=room?.remoteParticipants?.get(identity)||room?.localParticipant;
+ const micMuted=liveParticipant ? !liveParticipant.isMicrophoneEnabled : false;
+ card.classList.toggle('mic-muted',micMuted);
+ card.classList.toggle('mic-idle',!micMuted);
+
  // El anfitrión puede ampliar únicamente tarjetas de invitados.
  if(isHostController() && !isHostParticipant(participant) && !card.dataset.hostEnlargeBound){
   card.addEventListener('click',ev=>{
@@ -555,7 +585,7 @@ window.activateSound=async()=>{
   setStatus('Sonido habilitado. Ya podés escuchar a los participantes que tengan el micrófono encendido.');
  }catch(e){setStatus('No se pudo activar el sonido: '+e.message);}
 };
-async function connectRoom(){if(room)return;myName=safeName($('name').value);if(!myName||myName==='Invitado'&&!$('name').value.trim())throw new Error('El nombre es obligatorio.');room=new Room({adaptiveStream:true,dynacast:true});room.on(RoomEvent.TrackSubscribed,(track,publication,participant)=>attachRemoteMedia(track,participant));room.on(RoomEvent.TrackUnsubscribed,(track)=>{for(const el of track.detach())el.remove();});room.on(RoomEvent.ParticipantConnected,p=>{addPerson(p);ensureHostGuestControl(p);updateViewerList();setStatus((p.name||p.identity)+' se unió')});room.on(RoomEvent.ParticipantDisconnected,p=>{removePerson(p);updateViewerList();setStatus((p.name||p.identity)+' salió')});room.on(RoomEvent.DataReceived,async(payload,participant)=>{
+async function connectRoom(){if(room)return;myName=safeName($('name').value);if(!myName||myName==='Invitado'&&!$('name').value.trim())throw new Error('El nombre es obligatorio.');room=new Room({adaptiveStream:true,dynacast:true});room.on(RoomEvent.TrackSubscribed,(track,publication,participant)=>attachRemoteMedia(track,participant));room.on(RoomEvent.ActiveSpeakersChanged,(speakers)=>{const active=new Set((speakers||[]).map(p=>p.identity));document.querySelectorAll('#videos .person').forEach(card=>card.classList.toggle('speaking',active.has(card.id.slice(2))));});room.on(RoomEvent.TrackUnsubscribed,(track)=>{for(const el of track.detach())el.remove();});room.on(RoomEvent.ParticipantConnected,p=>{addPerson(p);ensureHostGuestControl(p);updateViewerList();setStatus((p.name||p.identity)+' se unió')});room.on(RoomEvent.ParticipantDisconnected,p=>{removePerson(p);updateViewerList();setStatus((p.name||p.identity)+' salió')});room.on(RoomEvent.DataReceived,async(payload,participant)=>{
  try{
   const data=JSON.parse(new TextDecoder().decode(payload));
   if(data.type==='chat'){appendComment(data.name,data.text)}
