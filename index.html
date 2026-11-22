@@ -185,7 +185,8 @@ body.guest-link #authGate{display:none!important}
 /* Los controles de anfitrión permanecen ocultos hasta validar la cuenta administradora. */
 (function () {
   const params = new URLSearchParams(window.location.search);
-  if (params.has('sala')) {
+  const isInstalledApp = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  if (params.has('sala') && !isInstalledApp) {
     document.body.classList.add('guest-link');
     ['authGate','createRoomBtn','recoverRoomBtn','endLiveBtn','hostAdmin','logoutBtn'].forEach(id => {
       const el = document.getElementById(id);
@@ -239,7 +240,10 @@ onAuthStateChanged(auth,async user=>{
  currentUser=user;
  const params=new URLSearchParams(location.search);
  const inviteRoom=params.get('sala');
- if(inviteRoom){
+ const isInstalledApp=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+ // En el ícono instalado del iPhone, abrir siempre el inicio completo,
+ // aunque Safari haya guardado la URL mientras se estaba dentro de una sala.
+ if(inviteRoom && !isInstalledApp){
   isAdmin=false;
   isHostSession=false;
   document.body.classList.add('guest-link');
@@ -263,6 +267,8 @@ onAuthStateChanged(auth,async user=>{
   catch(e){setStatus('No se pudo conectar a la sala: '+e.message+' · Revisá el enlace.');console.error(e);}
   return;
  }
+ // Si el ícono instalado guardó una URL con ?sala=..., limpiar el parámetro.
+ if(inviteRoom && isInstalledApp) history.replaceState({},'',location.pathname);
  // En la página principal, el anfitrión puede crear su sala sin usuario ni contraseña.
  isAdmin=true;
  document.body.classList.add('authenticated');
