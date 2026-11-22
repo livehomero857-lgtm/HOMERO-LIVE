@@ -187,10 +187,17 @@ body.guest-link #authGate{display:none!important}
 <script type="module">
 import {Room, RoomEvent, Track, TokenSource} from 'https://esm.sh/livekit-client@2.22.4';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js';
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, signInAnonymously } from 'https://www.gstatic.com/firebasejs/13.3.0/firebase-auth.js';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, signInAnonymously, setPersistence, browserLocalPersistence } from 'https://www.gstatic.com/firebasejs/13.3.0/firebase-auth.js';
 import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc } from 'https://www.gstatic.com/firebasejs/13.3.0/firebase-firestore.js';
 const firebaseConfig={apiKey:'AIzaSyBFFlXMlsQvEAXu-GM69jGH8l1vAF7np5A',authDomain:'homero-live.firebaseapp.com',projectId:'homero-live',storageBucket:'homero-live.firebasestorage.app',messagingSenderId:'1009669708876',appId:'1:1009669708876:web:db1aa3c3355a320f86e8e9',measurementId:'G-3SJ79SQC96'};
 const firebaseApp=initializeApp(firebaseConfig),auth=getAuth(firebaseApp),db=getFirestore(firebaseApp);
+// Mantener la sesión del anfitrión en ESTE navegador/dispositivo después del primer acceso correcto.
+// Firebase guarda el estado de autenticación de forma segura; no se guarda la contraseña en la página.
+try {
+ await setPersistence(auth,browserLocalPersistence);
+} catch(persistenceError) {
+ console.warn('No se pudo activar la persistencia local de Firebase:',persistenceError);
+}
 const ADMIN_EMAIL='homero@homero-live.app';let currentUser=null,isAdmin=false;
 const TOKEN_SERVER_ID='homerolive-2ms1z2';
 let room=null, roomCode='', cameraOn=false, micOn=false, myName='Invitado', isHostSession=false;
@@ -220,7 +227,28 @@ $('saveBankBtn')?.addEventListener('click',async()=>{
 $('copyBankAlias')?.addEventListener('click',()=>navigator.clipboard?.writeText(bankDetails.alias||''));
 $('copyBankAliasRoom')?.addEventListener('click',()=>navigator.clipboard?.writeText(bankDetails.alias||''));
 
-$('loginForm').addEventListener('submit',async ev=>{ev.preventDefault();$('authMessage').textContent='Verificando acceso del anfitrión…';try{const loginEmail=$('loginEmail').value.trim();await signInWithEmailAndPassword(auth,loginEmail,$('loginPassword').value)}catch(err){$('authMessage').textContent='No se pudo ingresar como anfitrión. Revisá el usuario y la contraseña.';console.error(err)}});
+$('loginForm').addEventListener('submit',async ev=>{
+ ev.preventDefault();
+ $('authMessage').textContent='Verificando acceso del anfitrión…';
+ try{
+  const loginEmail=$('loginEmail').value.trim().toLowerCase();
+  await setPersistence(auth,browserLocalPersistence);
+  await signInWithEmailAndPassword(auth,loginEmail,$('loginPassword').value);
+  $('authMessage').textContent='Acceso correcto. Este dispositivo recordará la sesión.';
+ }catch(err){
+  console.error('Error de acceso de HOMERO:',err);
+  const code=err?.code||'';
+  if(code.includes('user-not-found')||code.includes('invalid-credential')||code.includes('wrong-password')||code.includes('invalid-email')){
+   $('authMessage').textContent='No se pudo validar el usuario. Revisá que la cuenta de Homero exista en Firebase y que el correo y la contraseña sean correctos.';
+  }else if(code.includes('too-many-requests')){
+   $('authMessage').textContent='Firebase bloqueó temporalmente los intentos. Esperá unos minutos y volvé a probar.';
+  }else if(code.includes('network-request-failed')){
+   $('authMessage').textContent='No hay conexión con Firebase. Revisá internet y volvé a intentar.';
+  }else{
+   $('authMessage').textContent='No se pudo iniciar sesión ('+code+'). Revisá la configuración de Firebase.';
+  }
+ }
+});
 onAuthStateChanged(auth,async user=>{
  currentUser=user;
  isAdmin=!!user&&!user.isAnonymous&&user.email?.toLowerCase()===ADMIN_EMAIL;
