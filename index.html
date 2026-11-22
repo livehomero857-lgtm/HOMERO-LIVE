@@ -209,6 +209,12 @@ let participantAudioVolume=0.5;
 function applyParticipantVolume(){document.querySelectorAll('audio[data-remote-participant]').forEach(audio=>{audio.volume=participantAudioVolume;});}
 function setupParticipantVolume(){const slider=$('participantVolume'),value=$('participantVolumeValue');if(!slider)return;participantAudioVolume=Number(slider.value)/100;if(value)value.textContent=slider.value+'%';slider.addEventListener('input',()=>{participantAudioVolume=Number(slider.value)/100;if(value)value.textContent=slider.value+'%';applyParticipantVolume();});}
 const $=id=>document.getElementById(id);
+async function ensureFirebaseSession(){
+ if(auth.currentUser){currentUser=auth.currentUser;return currentUser;}
+ try{const credential=await signInAnonymously(auth);currentUser=credential.user;return currentUser;}
+ catch(error){console.error('No se pudo iniciar la sesión de Firebase:',error);throw new Error('No se pudo conectar con Firebase. Revisá tu conexión e intentá nuevamente. '+(error?.message||''));}
+}
+
 let bankDetails={holder:'',bank:'',alias:''};
 async function loadBankDetails(){
  try{
@@ -624,21 +630,15 @@ applyMirrorPreview();
 setStatus('Conectado a la sala. Activá cámara y micrófono.');}
 function showRoom(){ $('home').classList.add('hidden');$('room').classList.remove('hidden');$('roomName').textContent='Sala '+roomCode;history.replaceState({},'', '?sala='+encodeURIComponent(roomCode));}
 window.createRoom=async()=>{
- const nameInput=$('name'),btn=$('createRoomBtn');
- if(!nameInput?.value.trim()){alert('Escribí tu nombre antes de crear la sala.');nameInput?.focus();return;}
- if(btn)btn.disabled=true;
+ const button=$('createRoomBtn');
+ if(button?.dataset.busy==='1')return;
+ if(!$('name').value.trim()){alert('Escribí tu nombre antes de crear la sala.');$('name').focus();return;}
+ myName=$('name').value.trim();
+ if(new URLSearchParams(location.search).has('sala')){alert('Para crear una sala, abrí HOMERO LIVE desde la página principal.');return;}
+ if(button){button.dataset.busy='1';button.disabled=true;button.textContent='⏳ Creando sala...';}
  try{
-  // En el acceso instalado de iPhone puede quedar una query ?sala= antigua en la URL.
-  // Como el botón de anfitrión está visible, iniciar una sala nueva debe limpiar esa ruta,
-  // no bloquear la acción como si fuera un enlace de invitado.
-  if(new URLSearchParams(location.search).has('sala'))history.replaceState({},'',location.pathname);
-  // Esperar la sesión anónima de Firebase antes de escribir en Firestore.
-  if(!auth.currentUser)await signInAnonymously(auth);
-  myName=safeName(nameInput.value);
-  nameInput.value=myName;
-  isAdmin=true;
+  await ensureFirebaseSession();
   isHostSession=true;
-  document.body.classList.remove('guest-link');
   roomCode='HO'+Math.random().toString(36).slice(2,7).toUpperCase();
   localStorage.setItem('homero_host_room',roomCode);
   localStorage.setItem('homero_host_identity','host-'+Math.random().toString(36).slice(2,10));
@@ -646,10 +646,14 @@ window.createRoom=async()=>{
   showRoom();
   await connectRoom();
  }catch(e){
-  const msg='No se pudo crear la sala: '+(e?.message||e);
-  const status=$('status');if(status)status.textContent=msg;else alert(msg);
-  console.error(e);
- }finally{if(btn)btn.disabled=false;}
+  isHostSession=false;
+  const message='No se pudo crear la sala: '+(e?.message||e);
+  console.error(message,e);
+  alert(message);
+  const status=$('guestRoomStatus');if(status)status.textContent=message;
+ }finally{
+  if(button){button.dataset.busy='0';button.disabled=false;button.textContent='＋ Crear sala (anfitrión)';}
+ }
 };
 window.recoverHostRoom=async()=>{const savedRoom=localStorage.getItem('homero_host_room');if(!savedRoom){alert('No hay una sala anterior guardada en este teléfono.');return}isHostSession=true;roomCode=savedRoom;await setDoc(doc(db,'configuracion','salaActiva'),{codigo:roomCode,activa:true,actualizada:Date.now()});showRoom();$('endLiveBtn').classList.remove('hidden');try{await connectRoom()}catch(e){setStatus('No se pudo recuperar la sala: '+e.message);console.error(e)}};
 window.enterRoom=async()=>{if(!$('name').value.trim()){alert('Escribí tu nombre antes de ingresar.');$('name').focus();return}myName=$('name').value.trim();isHostSession=false;roomCode=$('code').value.trim().toUpperCase();if(!roomCode){alert('Escribí el código de sala.');return}myName=safeName($('name').value||'Invitado');document.body.classList.add('guest-link');$('authGate')?.classList.add('hidden');showRoom();try{await connectRoom()}catch(e){setStatus('No se pudo conectar: '+e.message+' · Revisá el código y el servidor de prueba.');console.error(e)}};
