@@ -209,10 +209,20 @@ let participantAudioVolume=0.5;
 function applyParticipantVolume(){document.querySelectorAll('audio[data-remote-participant]').forEach(audio=>{audio.volume=participantAudioVolume;});}
 function setupParticipantVolume(){const slider=$('participantVolume'),value=$('participantVolumeValue');if(!slider)return;participantAudioVolume=Number(slider.value)/100;if(value)value.textContent=slider.value+'%';slider.addEventListener('input',()=>{participantAudioVolume=Number(slider.value)/100;if(value)value.textContent=slider.value+'%';applyParticipantVolume();});}
 const $=id=>document.getElementById(id);
+let firebaseSessionPromise=null;
 async function ensureFirebaseSession(){
  if(auth.currentUser){currentUser=auth.currentUser;return currentUser;}
- try{const credential=await signInAnonymously(auth);currentUser=credential.user;return currentUser;}
- catch(error){console.error('No se pudo iniciar la sesión de Firebase:',error);throw new Error('No se pudo conectar con Firebase. Revisá tu conexión e intentá nuevamente. '+(error?.message||''));}
+ if(!firebaseSessionPromise){
+  firebaseSessionPromise=signInAnonymously(auth).then(credential=>{
+   currentUser=credential.user;
+   return currentUser;
+  }).catch(error=>{
+   firebaseSessionPromise=null;
+   console.error('No se pudo iniciar la sesión de Firebase:',error);
+   throw new Error('No se pudo conectar con Firebase. '+(error?.message||'Revisá la conexión y la autenticación anónima.'));
+  });
+ }
+ return firebaseSessionPromise;
 }
 
 let bankDetails={holder:'',bank:'',alias:''};
@@ -285,7 +295,7 @@ onAuthStateChanged(auth,async user=>{
  $('guestRoomStatus').textContent='Escribí tu nombre para crear tu sala, o ingresá el código que te compartieron.';
  if(localStorage.getItem('homero_host_room'))$('recoverRoomBtn')?.classList.remove('hidden');
  try{await loadBankDetails();}catch(err){console.warn('No se pudieron cargar los datos bancarios:',err);}
- if(!user)signInAnonymously(auth).catch(err=>console.error('No se pudo iniciar la sesión anónima de Firebase:',err));
+ if(!user)ensureFirebaseSession().catch(err=>console.warn('La sesión de Firebase no está disponible todavía; la transmisión puede continuar:',err));
 });
 window.logoutHomero=async()=>{if(room)await room.disconnect().catch(()=>{});room=null;await signOut(auth);location.href=location.pathname;};
 async function loadAliasUsers(){const root=$('aliasUsers');if(!root)return;root.textContent='Cargando…';try{const snap=await getDocs(collection(db,'usuarios'));root.replaceChildren();if(snap.empty){root.textContent='Todavía no hay perfiles.';return;}snap.forEach(d=>{const data=d.data(),row=document.createElement('div');row.className='alias-row';const email=document.createElement('span');email.textContent=data.correo||d.id;const input=document.createElement('input');input.value=data.alias||'';input.maxLength=40;input.setAttribute('aria-label','Alias');const save=document.createElement('button');save.textContent='Guardar';save.type='button';save.onclick=async()=>{const alias=input.value.trim().slice(0,40);if(!alias){alert('Escribí un alias.');return;}try{await updateDoc(doc(db,'usuarios',d.id),{alias});if(currentUser?.uid===d.id){myName=alias;$('name').value=alias;}save.textContent='Guardado';setTimeout(()=>save.textContent='Guardar',1300)}catch(e){alert('No se pudo guardar el alias. Revisá las reglas de Firestore.');console.error(e)}};row.append(email,input,save);root.append(row);});}catch(e){root.textContent='No se pudieron cargar los usuarios. Revisá las reglas de Firestore.';console.error(e)}}
@@ -637,25 +647,31 @@ window.createRoom=async()=>{
  if(new URLSearchParams(location.search).has('sala')){alert('Para crear una sala, abrí HOMERO LIVE desde la página principal.');return;}
  if(button){button.dataset.busy='1';button.disabled=true;button.textContent='⏳ Creando sala...';}
  try{
-  await ensureFirebaseSession();
+  // La transmisión LiveKit no debe depender de que Firestore permita guardar la sala activa.
+  try{await ensureFirebaseSession();}catch(authError){console.warn('Firebase no está disponible; se intentará iniciar la transmisión igualmente:',authError);}
   isHostSession=true;
   roomCode='HO'+Math.random().toString(36).slice(2,7).toUpperCase();
   localStorage.setItem('homero_host_room',roomCode);
   localStorage.setItem('homero_host_identity','host-'+Math.random().toString(36).slice(2,10));
-  await setDoc(doc(db,'configuracion','salaActiva'),{codigo:roomCode,activa:true,actualizada:Date.now()});
+  try{
+   if(auth.currentUser)await setDoc(doc(db,'configuracion','salaActiva'),{codigo:roomCode,activa:true,actualizada:Date.now()});
+  }catch(firestoreError){console.warn('No se pudo guardar la sala activa en Firestore; se continúa con LiveKit:',firestoreError);}
   showRoom();
   await connectRoom();
  }catch(e){
   isHostSession=false;
-  const message='No se pudo crear la sala: '+(e?.message||e);
+  if(room){try{await room.disconnect();}catch(_){}room=null;}
+  const message='No se pudo iniciar la transmisión: '+(e?.message||e);
   console.error(message,e);
+  setStatus(message);
   alert(message);
-  const status=$('guestRoomStatus');if(status)status.textContent=message;
+  $('room')?.classList.remove('hidden');
+  $('home')?.classList.add('hidden');
  }finally{
   if(button){button.dataset.busy='0';button.disabled=false;button.textContent='＋ Crear sala (anfitrión)';}
  }
 };
-window.recoverHostRoom=async()=>{const savedRoom=localStorage.getItem('homero_host_room');if(!savedRoom){alert('No hay una sala anterior guardada en este teléfono.');return}isHostSession=true;roomCode=savedRoom;await setDoc(doc(db,'configuracion','salaActiva'),{codigo:roomCode,activa:true,actualizada:Date.now()});showRoom();$('endLiveBtn').classList.remove('hidden');try{await connectRoom()}catch(e){setStatus('No se pudo recuperar la sala: '+e.message);console.error(e)}};
+window.recoverHostRoom=async()=>{const savedRoom=localStorage.getItem('homero_host_room');if(!savedRoom){alert('No hay una sala anterior guardada en este teléfono.');return}isHostSession=true;roomCode=savedRoom;try{if(auth.currentUser)await setDoc(doc(db,'configuracion','salaActiva'),{codigo:roomCode,activa:true,actualizada:Date.now()});}catch(e){console.warn('No se pudo actualizar la sala activa en Firestore; se continúa:',e)}showRoom();$('endLiveBtn').classList.remove('hidden');try{await connectRoom()}catch(e){if(room){try{await room.disconnect()}catch(_){}room=null;}setStatus('No se pudo recuperar la transmisión: '+e.message);console.error(e)}};
 window.enterRoom=async()=>{if(!$('name').value.trim()){alert('Escribí tu nombre antes de ingresar.');$('name').focus();return}myName=$('name').value.trim();isHostSession=false;roomCode=$('code').value.trim().toUpperCase();if(!roomCode){alert('Escribí el código de sala.');return}myName=safeName($('name').value||'Invitado');document.body.classList.add('guest-link');$('authGate')?.classList.add('hidden');showRoom();try{await connectRoom()}catch(e){setStatus('No se pudo conectar: '+e.message+' · Revisá el código y el servidor de prueba.');console.error(e)}};
 let cameraStarting=false;
 const cameraControl=()=>document.querySelector('.local-cam-control');
