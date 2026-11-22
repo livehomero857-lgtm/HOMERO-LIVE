@@ -187,7 +187,7 @@ body.guest-link #authGate{display:none!important}
 <script type="module">
 import {Room, RoomEvent, Track, TokenSource} from 'https://esm.sh/livekit-client@2.22.4';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js';
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, signInAnonymously, setPersistence, browserLocalPersistence } from 'https://www.gstatic.com/firebasejs/13.3.0/firebase-auth.js';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence } from 'https://www.gstatic.com/firebasejs/13.3.0/firebase-auth.js';
 import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc } from 'https://www.gstatic.com/firebasejs/13.3.0/firebase-firestore.js';
 const firebaseConfig={apiKey:'AIzaSyBFFlXMlsQvEAXu-GM69jGH8l1vAF7np5A',authDomain:'homero-live.firebaseapp.com',projectId:'homero-live',storageBucket:'homero-live.firebasestorage.app',messagingSenderId:'1009669708876',appId:'1:1009669708876:web:db1aa3c3355a320f86e8e9',measurementId:'G-3SJ79SQC96'};
 const firebaseApp=initializeApp(firebaseConfig),auth=getAuth(firebaseApp),db=getFirestore(firebaseApp);
@@ -852,6 +852,8 @@ function applyTurnTimerState(state,broadcast=false){
  if(turnTimerState.running&&!turnTimerInterval){turnTimerInterval=setInterval(tickTurnTimer,200);}
  if(!turnTimerState.running&&turnTimerInterval){clearInterval(turnTimerInterval);turnTimerInterval=null;}
  renderTurnTimer();
+ if(broadcast)broadcastTurnTimer();
+}
 const homeroStickerCatalog=[
  {label:'7/11 LA CLAVADA',emoji:'🎲🎲',caption:'7/11 LA CLAVADA'},
  {label:'BUSCAMOS BUENA',emoji:'🔎🎲',caption:'BUSCAMOS BUENA'},
@@ -950,7 +952,7 @@ if(e.key==='Enter')window.sendComment();
 
 // Los botones de anfitrión solo se muestran después de validar ADMIN_EMAIL.
 
-if(!auth.currentUser){signInAnonymously(auth).catch(e=>{console.error('No se pudo habilitar el acceso público:',e);$('guestRoomStatus').textContent='No se pudo habilitar el acceso. Volvé a cargar la página.';});}
+// No iniciar sesión anónima automáticamente: esperar la restauración de Firebase.
 
 const existing=new URLSearchParams(location.search).get('sala');
 if(existing){
