@@ -696,7 +696,19 @@ window.activateSound=async()=>{
   setStatus('Sonido habilitado. Ya podés escuchar a los participantes que tengan el micrófono encendido.');
  }catch(e){setStatus('No se pudo activar el sonido: '+e.message);}
 };
-async function connectRoom(){if(room)return;myName=safeName($('name').value);if(!myName||myName==='Invitado'&&!$('name').value.trim())throw new Error('El nombre es obligatorio.');room=new Room({adaptiveStream:true,dynacast:true});room.on(RoomEvent.TrackSubscribed,(track,publication,participant)=>attachRemoteMedia(track,participant));room.on(RoomEvent.ActiveSpeakersChanged,(speakers)=>{const active=new Set((speakers||[]).map(p=>p.identity));document.querySelectorAll('#videos .person').forEach(card=>card.classList.toggle('speaking',active.has(card.id.slice(2))));});room.on(RoomEvent.TrackUnsubscribed,(track)=>{for(const el of track.detach())el.remove();});room.on(RoomEvent.ParticipantConnected,p=>{addPerson(p);ensureHostGuestControl(p);updateViewerList();setStatus((p.name||p.identity)+' se unió')});room.on(RoomEvent.ParticipantDisconnected,p=>{removePerson(p);updateViewerList();setStatus((p.name||p.identity)+' salió')});room.on(RoomEvent.DataReceived,async(payload,participant)=>{
+async function connectRoom(){if(room)return;myName=safeName($('name').value);if(!myName||myName==='Invitado'&&!$('name').value.trim())throw new Error('El nombre es obligatorio.');room=new Room({adaptiveStream:true,dynacast:true});room.on(RoomEvent.TrackSubscribed,(track,publication,participant)=>attachRemoteMedia(track,participant));room.on(RoomEvent.ActiveSpeakersChanged,(speakers)=>{const active=new Set((speakers||[]).map(p=>p.identity));document.querySelectorAll('#videos .person').forEach(card=>card.classList.toggle('speaking',active.has(card.id.slice(2))));});room.on(RoomEvent.TrackUnsubscribed,(track)=>{for(const el of track.detach())el.remove();});room.on(RoomEvent.ParticipantConnected,p=>{
+ const keepFeatured=featuredIdentity;
+ addPerson(p);
+ ensureHostGuestControl(p);
+ // La llegada de un invitado nuevo nunca debe reemplazar al participante elegido por el anfitrión.
+ if(isHostController()&&keepFeatured&&keepFeatured!==p.identity){
+  const selectedCard=document.getElementById('p-'+keepFeatured);
+  if(selectedCard&&selectedCard.parentElement!==$('stage'))showFeatured(keepFeatured,false);
+  else if(!selectedCard)pendingFeaturedIdentity=keepFeatured;
+ }
+ updateViewerList();
+ setStatus((p.name||p.identity)+' se unió');
+});room.on(RoomEvent.ParticipantDisconnected,p=>{removePerson(p);updateViewerList();setStatus((p.name||p.identity)+' salió')});room.on(RoomEvent.DataReceived,async(payload,participant)=>{
  try{
   const data=JSON.parse(new TextDecoder().decode(payload));
   if(data.type==='chat'){appendComment(data.name,data.text)}
@@ -708,7 +720,7 @@ async function connectRoom(){if(room)return;myName=safeName($('name').value);if(
    document.querySelectorAll('.local-mic-control').forEach(button=>{button.textContent='🎙️';button.setAttribute('aria-label','Activar mi micrófono');button.title='Activar mi micrófono';});
    setStatus('El anfitrión te pidió silenciar el micrófono. Podés volver a encenderlo cuando quieras.');
   }else if(data.type==='spotlightRequest'&&isHostSession&&participant?.identity){
-   const selected=featuredIdentity||room?.localParticipant?.identity;
+   const selected=(featuredIdentity&&document.getElementById('p-'+featuredIdentity))?featuredIdentity:(room?.localParticipant?.identity);
    if(selected){
     const reply=new TextEncoder().encode(JSON.stringify({type:'spotlight',identity:selected}));
     room.localParticipant.publishData(reply,{reliable:true,destinationIdentities:[participant.identity]}).catch(err=>console.error('No se pudo enviar la pantalla principal al nuevo invitado:',err));
