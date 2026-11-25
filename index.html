@@ -148,6 +148,28 @@ body.guest-link #authGate{display:none!important}
  border:1px solid #d4af37!important;font-size:17px!important;line-height:1!important;
  touch-action:manipulation!important;z-index:2!important;
 }
+
+/* HOMERO LIVE — ventanas circulares y micrófono fijo junto al chat */
+#videos{display:flex!important;flex-direction:column!important;align-items:center!important;gap:12px!important;max-height:58vh!important;overflow-y:auto!important;overflow-x:hidden!important;padding:8px 4px 14px!important}
+#videos .person{position:relative!important;width:76px!important;height:76px!important;min-width:76px!important;max-width:76px!important;aspect-ratio:1/1!important;padding:0!important;border:2px solid #d4af37!important;border-radius:50%!important;overflow:visible!important;background:#17120a!important;display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:center!important}
+#videos .person video{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;aspect-ratio:1/1!important;object-fit:cover!important;border-radius:50%!important;background:#111!important}
+#videos .person .name{position:absolute!important;top:calc(100% + 2px)!important;left:50%!important;transform:translateX(-50%)!important;width:96px!important;max-width:96px!important;justify-content:center!important;padding:2px!important;background:#090909dd!important;border-radius:10px!important;font-size:10px!important;text-align:center!important;z-index:3!important}
+#videos .person .local-controls{display:none!important}
+#videos .person .enlarge-person{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;margin:0!important;padding:0!important;border:0!important;border-radius:50%!important;background:transparent!important;color:transparent!important;font-size:0!important;z-index:4!important}
+#videos .person .host-mute-person{display:none!important}
+#chatComposer{position:sticky!important;bottom:0!important;z-index:100!important;background:linear-gradient(180deg,#100d08,#050505)!important;padding:10px max(8px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))!important;border-top:1px solid #b99135!important}
+#chatComposer .composer-mic-control{flex:0 0 46px!important;width:46px!important;height:46px!important;min-width:46px!important;border-radius:50%!important;border:1px solid #d4af37!important;background:#f5d575!important;color:#111!important;font-size:20px!important;padding:0!important;touch-action:manipulation!important}
+#chatComposer #message{min-height:46px!important;height:46px!important;border-radius:24px!important}
+#chatComposer button.primary{min-height:46px!important;border-radius:24px!important}
+#chatComposer .composer-mic-control:disabled{opacity:.55}
+@media(max-width:600px){#videos{gap:14px!important}#videos .person{width:64px!important;height:64px!important;min-width:64px!important;max-width:64px!important}#videos .person .name{width:82px!important;max-width:82px!important;font-size:9px!important}}
+
+
+#liveStickyArea{position:relative!important;display:block!important;padding-right:84px!important;min-height:180px!important}
+#stage{width:100%!important;margin-right:0!important}
+#videos{position:absolute!important;right:0!important;top:8px!important;bottom:8px!important;width:76px!important;max-height:60vh!important;z-index:25!important}
+@media(max-width:600px){#liveStickyArea{padding-right:72px!important}#videos{width:64px!important}}
+
 </style>
 </head>
 <body>
@@ -306,7 +328,13 @@ let guestCameraAllowed=false;
 function updateGuestCameraPermission(allowed){
  guestCameraAllowed=!!allowed;
  const btn=cameraControl();
- if(btn){btn.disabled=!guestCameraAllowed && !cameraOn;btn.style.opacity=guestCameraAllowed?'1':'.4';btn.title=guestCameraAllowed?'Cámara habilitada por el anfitrión':'Esperá a que el anfitrión te amplíe';}
+ if(btn){
+  const canUseCamera=isHostController()||guestCameraAllowed;
+  btn.disabled=!canUseCamera && !cameraOn;
+  btn.style.opacity=canUseCamera?'1':'.4';
+  btn.style.display=canUseCamera?'inline-flex':'none';
+  btn.title=canUseCamera?'Cámara habilitada por el anfitrión':'Esperá a que el anfitrión te amplíe';
+ }
  if(!guestCameraAllowed && cameraOn && room?.localParticipant){
   room.localParticipant.setCameraEnabled(false).catch(()=>{});cameraOn=false;
   document.querySelectorAll('.local-cam-control').forEach(b=>{b.textContent='📷';b.setAttribute('aria-label','Cámara bloqueada por el anfitrión');});
@@ -557,6 +585,14 @@ function addLocalCard(){
   controls.append(micButton,cameraToggle,flipButton);
  }else{controls.append(micButton,camButton,flipButton);}
  card.querySelector('.name').append(controls);
+ // El micrófono propio queda fijo junto al campo de comentarios, siempre visible.
+ const composer=$('chatComposer');
+ if(composer){
+  micButton.classList.add('composer-mic-control');
+  micButton.setAttribute('aria-label',micOn?'Apagar mi micrófono':'Activar mi micrófono');
+  micButton.title=micOn?'Apagar mi micrófono':'Activar mi micrófono';
+  composer.append(micButton);
+ }
  applyMirrorPreview();
  if(isHostController()){
   const mirrorButton=document.createElement('button');
@@ -629,6 +665,8 @@ async function connectRoom(){if(room)return;myName=safeName($('name').value);if(
    if(selected){
     const reply=new TextEncoder().encode(JSON.stringify({type:'spotlight',identity:selected}));
     room.localParticipant.publishData(reply,{reliable:true,destinationIdentities:[participant.identity]}).catch(err=>console.error('No se pudo enviar la pantalla principal al nuevo invitado:',err));
+    const permission=new TextEncoder().encode(JSON.stringify({type:'cameraPermission',identity:cameraPermissionIdentity}));
+    room.localParticipant.publishData(permission,{reliable:true,destinationIdentities:[participant.identity]}).catch(err=>console.error('No se pudo enviar el permiso inicial de cámara:',err));
    }
   }else if(data.type==='cameraPermission'&&isHostParticipant(participant)){
    updateGuestCameraPermission(data.identity===room?.localParticipant?.identity);
