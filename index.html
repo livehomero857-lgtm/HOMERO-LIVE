@@ -249,11 +249,6 @@ body{padding:0!important;overflow-x:hidden!important;background:#080604!importan
   }
 })();
 </script>
-<script>
-// Compatibilidad: evita que una referencia antigua al control de levantar la mano
-// interrumpa la sala. La función de levantar la mano ya no forma parte de la interfaz.
-window.renderHandState = window.renderHandState || function(){ return; };
-</script>
 <script type="module">
 import {Room, RoomEvent, Track, TokenSource} from 'https://esm.sh/livekit-client@2.22.4';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js';
@@ -442,6 +437,7 @@ function showFeatured(identity,broadcast=true){
  if(previous && previous!==card) $('videos').append(previous);
 
  featuredIdentity=identity;
+ stage.dataset.featuredIdentity=identity;
  stage.replaceChildren(card,$('chatBubbles'));
 
  // El anfitrión comunica a toda la sala qué participante debe verse en grande.
@@ -544,6 +540,12 @@ function addPerson(participant,track=null){
  if(pendingFeaturedIdentity===identity){
   showFeatured(identity,false);
  }
+ // Al agregar o actualizar una tarjeta, nunca permitimos que desplace
+ // del escenario a la persona que el anfitrión ya había seleccionado.
+ if(isHostController() && featuredIdentity && featuredIdentity!==identity){
+  const selectedCard=document.getElementById('p-'+featuredIdentity);
+  if(selectedCard && selectedCard.parentElement!==$('stage')) showFeatured(featuredIdentity,false);
+ }
 
  if(track && track.kind==='video'){
   const video=card.querySelector('video');
@@ -558,6 +560,7 @@ function addPerson(participant,track=null){
 
 function removePerson(participant){
  const id=participant.identity;
+ raisedHands.delete(id);
   for(const audio of document.querySelectorAll('audio[data-remote-participant]')){if(audio.dataset.remoteParticipant===id)audio.remove();}
  const el=document.getElementById('p-'+id);
  if(el)el.remove();
@@ -567,6 +570,7 @@ function removePerson(participant){
   // El anfitrión conserva el control y debe seleccionar manualmente la siguiente pantalla.
   featuredIdentity=null;
   pendingFeaturedIdentity=null;
+  delete $('stage').dataset.featuredIdentity;
   $('stage').replaceChildren($('chatBubbles'));
  }
 }
@@ -674,18 +678,34 @@ window.activateSound=async()=>{
   setStatus('Sonido habilitado. Ya podés escuchar a los participantes que tengan el micrófono encendido.');
  }catch(e){setStatus('No se pudo activar el sonido: '+e.message);}
 };
-async function connectRoom(){if(room)return;myName=safeName($('name').value);if(!myName||myName==='Invitado'&&!$('name').value.trim())throw new Error('El nombre es obligatorio.');room=new Room({adaptiveStream:true,dynacast:true});room.on(RoomEvent.TrackSubscribed,(track,publication,participant)=>attachRemoteMedia(track,participant));room.on(RoomEvent.ActiveSpeakersChanged,(speakers)=>{const active=new Set((speakers||[]).map(p=>p.identity));document.querySelectorAll('#videos .person').forEach(card=>card.classList.toggle('speaking',active.has(card.id.slice(2))));});room.on(RoomEvent.TrackUnsubscribed,(track)=>{for(const el of track.detach())el.remove();});room.on(RoomEvent.ParticipantConnected,p=>{
- const keepFeatured=featuredIdentity;
+// Invitado: al volver desde WhatsApp/llamada, solicitar al anfitrión
+// la selección vigente del escenario. Esto no cambia quién controla la sala.
+let spotlightResumeTimer=null;
+function requestHostSpotlight(){
+ if(isHostController()||!room?.localParticipant||room.state!=='connected')return;
+ const request=new TextEncoder().encode(JSON.stringify({type:'spotlightRequest'}));
+ room.localParticipant.publishData(request,{reliable:true}).catch(err=>console.warn('No se pudo recuperar la pantalla principal:',err));
+}
+function recoverGuestSpotlight(){
+ if(isHostController()||!room)return;
+ if(spotlightResumeTimer)clearTimeout(spotlightResumeTimer);
+ [350,1100,2400].forEach(delay=>setTimeout(requestHostSpotlight,delay));
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')recoverGuestSpotlight();});
+window.addEventListener('pageshow',()=>recoverGuestSpotlight());
+window.addEventListener('focus',()=>recoverGuestSpotlight());
+
+async function connectRoom(){if(room)return;myName=safeName($('name').value);if(!myName||myName==='Invitado'&&!$('name').value.trim())throw new Error('El nombre es obligatorio.');room=new Room({adaptiveStream:true,dynacast:true});room.on(RoomEvent.Reconnected,()=>{if(!isHostController())recoverGuestSpotlight();});room.on(RoomEvent.TrackSubscribed,(track,publication,participant)=>attachRemoteMedia(track,participant));room.on(RoomEvent.ActiveSpeakersChanged,(speakers)=>{const active=new Set((speakers||[]).map(p=>p.identity));document.querySelectorAll('#videos .person').forEach(card=>card.classList.toggle('speaking',active.has(card.id.slice(2))));});room.on(RoomEvent.TrackUnsubscribed,(track)=>{for(const el of track.detach())el.remove();});room.on(RoomEvent.ParticipantConnected,p=>{
+ // Guardar la selección vigente antes de incorporar al nuevo invitado.
+ const selectedIdentity=featuredIdentity||room?.localParticipant?.identity;
  addPerson(p);
  ensureHostGuestControl(p);
- // La llegada de un invitado nuevo nunca debe reemplazar al participante elegido por el anfitrión.
- if(isHostController()){
-  const selectedIdentity=keepFeatured||room?.localParticipant?.identity;
-  if(selectedIdentity&&selectedIdentity!==p.identity){
-   const selectedCard=document.getElementById('p-'+selectedIdentity);
-   if(selectedCard&&selectedCard.parentElement!==$('stage'))showFeatured(selectedIdentity,false);
-   else if(!selectedCard)pendingFeaturedIdentity=selectedIdentity;
-  }
+ // La llegada de un invitado jamás cambia el escenario: reubicar siempre
+ // la tarjeta seleccionada, incluso si algún evento de medios la movió.
+ if(isHostController() && selectedIdentity && selectedIdentity!==p.identity){
+  const selectedCard=document.getElementById('p-'+selectedIdentity);
+  if(selectedCard) showFeatured(selectedIdentity,false);
+  else pendingFeaturedIdentity=selectedIdentity;
  }
  updateViewerList();
  setStatus((p.name||p.identity)+' se unió');
@@ -716,8 +736,7 @@ async function connectRoom(){if(room)return;myName=safeName($('name').value);if(
  }catch(e){console.warn('Mensaje de sala no procesado:',e)}
 });room.on(RoomEvent.Disconnected,()=>setStatus('Desconectado de la sala.'));const source=TokenSource.developmentTokenServer(TOKEN_SERVER_ID);const hostIdentity=isHostSession?(localStorage.getItem('homero_host_identity')||('host-'+Math.random().toString(36).slice(2,10))):null;if(isHostSession)localStorage.setItem('homero_host_identity',hostIdentity);const creds=await source.fetch({roomName:roomCode,participantName:myName,participantIdentity:(isHostSession?hostIdentity:'u-'+Math.random().toString(36).slice(2,10))});await room.connect(creds.serverUrl,creds.participantToken);addLocalCard();if(isHostSession){showFeatured(room.localParticipant.identity,true);}renderViewerList();if(!isHostSession){updateGuestCameraPermission(false);const ask=new TextEncoder().encode(JSON.stringify({type:'cameraPermissionRequest'}));room.localParticipant.publishData(ask,{reliable:true}).catch(()=>{});}for(const p of room.remoteParticipants.values()){addPerson(p);ensureHostGuestControl(p);for(const pub of p.trackPublications.values()){if(pub.track&&pub.isSubscribed)attachRemoteMedia(pub.track,p)}}updateViewerList();
 if(!isHostSession){
- const request=new TextEncoder().encode(JSON.stringify({type:'spotlightRequest'}));
- room.localParticipant.publishData(request,{reliable:true}).catch(err=>console.error('No se pudo solicitar la pantalla principal:',err));
+ requestHostSpotlight();
 }
 applyMirrorPreview();
 setStatus('Conectado a la sala. Activá cámara y micrófono.');}
