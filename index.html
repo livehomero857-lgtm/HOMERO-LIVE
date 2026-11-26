@@ -249,6 +249,11 @@ body{padding:0!important;overflow-x:hidden!important;background:#080604!importan
   }
 })();
 </script>
+<script>
+// Compatibilidad: evita que una referencia antigua al control de levantar la mano
+// interrumpa la sala. La función de levantar la mano ya no forma parte de la interfaz.
+window.renderHandState = window.renderHandState || function(){ return; };
+</script>
 <script type="module">
 import {Room, RoomEvent, Track, TokenSource} from 'https://esm.sh/livekit-client@2.22.4';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js';
@@ -553,7 +558,6 @@ function addPerson(participant,track=null){
 
 function removePerson(participant){
  const id=participant.identity;
- raisedHands.delete(id);
   for(const audio of document.querySelectorAll('audio[data-remote-participant]')){if(audio.dataset.remoteParticipant===id)audio.remove();}
  const el=document.getElementById('p-'+id);
  if(el)el.remove();
