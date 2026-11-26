@@ -534,7 +534,7 @@ function addPerson(participant,track=null){
   $('videos').append(card);
  }
  ensureHostGuestControl(participant);
- renderHandState(identity);
+ // La función de levantar la mano fue retirada; no debe ejecutarse aquí.
 
  if(pendingFeaturedIdentity===identity){
   showFeatured(identity,false);
